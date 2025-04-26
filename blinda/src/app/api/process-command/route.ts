@@ -1,12 +1,17 @@
 import { NextResponse, NextRequest } from "next/server"; // Import NextRequest
-import OpenAI from "openai";
+// Removed OpenAI import
+// import OpenAI from "openai";
+import { createAzure } from '@ai-sdk/azure'; // Corrected import path for createAzure
 
 // Serverless Function runtime (default for Next.js API routes)
 // export const runtime = "nodejs"; // This is the default, can be omitted
 
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY!, // Use non-null assertion as it's required
+// Initialize Azure OpenAI client using Vercel AI SDK
+const azure = createAzure({
+  resourceName: process.env.AZURE_RESOURCE_NAME!, // Azure resource name from .env.local
+  apiKey: process.env.AZURE_API_KEY!, // Azure API key from .env.local
 });
+
 
 export async function POST(req: NextRequest) { // Change Request to NextRequest
   try {
@@ -55,11 +60,11 @@ export async function POST(req: NextRequest) { // Change Request to NextRequest
 
 
     // --- Step 3: Use LLM to interpret CUA output and generate user-friendly text ---
-    console.log("Using LLM to interpret CUA output...");
+    console.log("Using LLM to interpret CUA output using Azure OpenAI...");
     // For the POC, we'll send the raw CUA output to the LLM.
     // In a full implementation, we might pre-process the CUA output.
-    const llmResponse = await openai.chat.completions.create({
-      model: "gpt-4o-mini", // Or another suitable model
+    const llmResponse = await azure.chat.completions.create({ // Use azure client
+      model: "gpt-4o-mini", // Or another suitable model deployed on Azure
       messages: [
         {
           role: "system",
