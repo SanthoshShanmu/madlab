@@ -1,19 +1,14 @@
-import { NextResponse, NextRequest } from "next/server"; // Import NextRequest
-// Removed OpenAI import
-// import OpenAI from "openai";
-import { createAzure } from '@ai-sdk/azure'; // Corrected import path for createAzure
-
-// Serverless Function runtime (default for Next.js API routes)
-// export const runtime = "nodejs"; // This is the default, can be omitted
+import { NextResponse, NextRequest } from "next/server";
+import { createAzure } from '@ai-sdk/azure';
+import { generateText } from 'ai';
 
 // Initialize Azure OpenAI client using Vercel AI SDK
-const azure = createAzure({
-  resourceName: process.env.AZURE_RESOURCE_NAME!, // Azure resource name from .env.local
-  apiKey: process.env.AZURE_API_KEY!, // Azure API key from .env.local
-});
+const azureModel = createAzure({
+  resourceName: process.env.AZURE_RESOURCE_NAME!,
+  apiKey: process.env.AZURE_API_KEY!,
+})('gpt-4o-mini'); // Use your deployment name here
 
-
-export async function POST(req: NextRequest) { // Change Request to NextRequest
+export async function POST(req: NextRequest) {
   try {
     const { transcribedText, sessionId } = await req.json();
 
@@ -38,7 +33,6 @@ export async function POST(req: NextRequest) { // Change Request to NextRequest
         console.log(`Transcribed text "${transcribedText}" is not a URL, using as direct task.`);
     }
 
-
     // --- Step 2: Call Hyperbrowser/CUA Serverless Function ---
     console.log(`Calling /api/browse with task: ${JSON.stringify(cuaTask)} and session ID: ${sessionId}`);
     const browseResponse = await fetch(`${req.nextUrl.origin}/api/browse`, {
@@ -58,28 +52,23 @@ export async function POST(req: NextRequest) { // Change Request to NextRequest
     const updatedSessionId = browseResult.sessionId; // Get the potentially new session ID
     const cuaOutput = browseResult; // The whole result is the 'what it sees'
 
-
     // --- Step 3: Use LLM to interpret CUA output and generate user-friendly text ---
     console.log("Using LLM to interpret CUA output using Azure OpenAI...");
-    // For the POC, we'll send the raw CUA output to the LLM.
-    // In a full implementation, we might pre-process the CUA output.
-    const llmResponse = await azure.chat.completions.create({ // Use azure client
-      model: "gpt-4o-mini", // Or another suitable model deployed on Azure
+    const { text: userFriendlyText } = await generateText({
+      model: azureModel,
       messages: [
         {
           role: "system",
-          content: "You are an AI assistant that helps blind users understand web pages. Describe the key elements and available actions on the page based on the provided technical output from a browser agent. Be concise and focus on interactive elements. End your response by asking the user what they want to do next.",
+          content: "You are an AI assistant that helps blind users understand web pages. Describe the key elements and available actions on the page based on the provided technical output from a browser agent. Be concise and focus on interactive elements. End your response by asking the user what they want to do next."
         },
         {
           role: "user",
-          content: `Browser state after executing task "${transcribedText}":\n\n${JSON.stringify(cuaOutput, null, 2)}`,
-        },
-      ],
+          content: `Browser state after executing task "${transcribedText}":\n\n${JSON.stringify(cuaOutput, null, 2)}`
+        }
+      ]
     });
 
-    const userFriendlyText = llmResponse.choices[0]?.message?.content || "Could not interpret the page.";
     console.log(`Generated user-friendly text: "${userFriendlyText}"`);
-
 
     // --- Step 4: Call Eleven Labs TTS Edge Function ---
     console.log(`Calling /api/tts with text: "${userFriendlyText}"`);
