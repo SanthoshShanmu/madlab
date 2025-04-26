@@ -60,7 +60,7 @@ const sendAudioForTranscription = async (audioBlob: Blob) => {
     const result = await response.json();
     console.log("Transcription result:", result);
     // Send the transcription result to the orchestration Serverless Function
-    processCommand(result.transcription); // Call the function to process the command
+    processCommand(result.text); // Call the function to process the command
 
   } catch (error) {
     console.error("Error sending audio for transcription:", error);
@@ -89,7 +89,7 @@ const processCommand = async (transcribedText: string) => {
 
     // The response body is the audio stream from the TTS Edge Function
     const audioBlob = await response.blob();
-    console("Received audio blob from backend.");
+    console.log("Received audio blob from backend."); // Corrected console.log
     // Play the audio blob
     playAudio(audioBlob);
 
