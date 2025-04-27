@@ -1,16 +1,14 @@
 import { NextResponse, NextRequest } from "next/server"; // Import NextRequest
 // Removed OpenAI import
 // import OpenAI from "openai";
-import { createAzure } from '@ai-sdk/azure'; // Corrected import path for createAzure
+import { google } from '@ai-sdk/google';
+import { generateText } from 'ai';
 
 // Serverless Function runtime (default for Next.js API routes)
 // export const runtime = "nodejs"; // This is the default, can be omitted
 
-// Initialize Azure OpenAI client using Vercel AI SDK
-const azure = createAzure({
-  resourceName: process.env.AZURE_RESOURCE_NAME!, // Azure resource name from .env.local
-  apiKey: process.env.AZURE_API_KEY!, // Azure API key from .env.local
-});
+// Initialize Google Generative AI client using Vercel AI SDK
+const googleModel = google('gemini-2.5-pro-latest');
 
 
 export async function POST(req: NextRequest) { // Change Request to NextRequest
@@ -60,11 +58,11 @@ export async function POST(req: NextRequest) { // Change Request to NextRequest
 
 
     // --- Step 3: Use LLM to interpret CUA output and generate user-friendly text ---
-    console.log("Using LLM to interpret CUA output using Azure OpenAI...");
+    console.log("Using LLM to interpret CUA output using Google Generative AI...");
     // For the POC, we'll send the raw CUA output to the LLM.
     // In a full implementation, we might pre-process the CUA output.
-    const llmResponse = await azure.chat.completions.create({ // Use azure client
-      model: "gpt-4o-mini", // Or another suitable model deployed on Azure
+    const { text: userFriendlyText } = await generateText({
+      model: googleModel,
       messages: [
         {
           role: "system",
@@ -77,7 +75,6 @@ export async function POST(req: NextRequest) { // Change Request to NextRequest
       ],
     });
 
-    const userFriendlyText = llmResponse.choices[0]?.message?.content || "Could not interpret the page.";
     console.log(`Generated user-friendly text: "${userFriendlyText}"`);
 
 
