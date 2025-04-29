@@ -32,7 +32,7 @@ export async function POST(req: Request) {
     if (!currentSessionId) {
       console.log("No session ID provided, creating a new Hyperbrowser session.");
       const newSession = await hyperbrowserClient.sessions.create({
-        solveCaptchas: true, // Enable captcha solving on session creation
+        ///solveCaptchas: true, // Enable captcha solving on session creation
         useStealth: true, // Enable stealth mode on session creation
       });
       currentSessionId = newSession.id;
@@ -41,6 +41,8 @@ export async function POST(req: Request) {
       console.log(`Reusing session with ID: ${currentSessionId}`);
       // Optional: Add logic here to verify the session is still active if needed
     }
+
+    console.log("OPENAI_API_KEY:", process.env.OPENAI_API_KEY); // Debugging log
 
     // Execute the CUA task using Hyperbrowser
     // Pass the task description and the current session ID
@@ -51,7 +53,7 @@ export async function POST(req: Request) {
       // Use the current session ID
       // Options like solveCaptchas, useStealth, keepBrowserOpen are set on session creation
     });
-
+    console.log(result)
     // Return the result from the CUA task, including the session ID for reuse
     // The result will contain information about the browser state ('what it sees')
     return NextResponse.json({ ...result, sessionId: currentSessionId });
