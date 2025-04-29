@@ -85,16 +85,17 @@ export async function POST(req: NextRequest) {
       throw new Error(`Eleven Labs TTS API error! status: ${ttsResponse.status}, body: ${errorText}`);
     }
 
-    // --- Step 5: Stream audio back to frontend ---
-    // The /api/tts route returns an audio stream directly.
-    // We can return this stream directly from this Serverless Function.
-    console.log("Streaming audio back to frontend.");
-    return new Response(ttsResponse.body, {
-      headers: {
-        'Content-Type': 'audio/mpeg', // Or the appropriate audio MIME type from /api/tts response headers
-        'Transfer-Encoding': 'chunked',
-      },
+    // --- Step 5: Stream audio back to frontend with the session ID in headers ---
+    console.log("Streaming audio back to frontend with session ID:", updatedSessionId);
+    
+    // Create headers with the session ID
+    const headers = new Headers({
+      'Content-Type': 'audio/mpeg',
+      'Transfer-Encoding': 'chunked',
+      'x-session-id': updatedSessionId || '', // Include the session ID in the response headers
     });
+    
+    return new Response(ttsResponse.body, { headers });
 
   } catch (error) {
     console.error("Error processing command:", error);
